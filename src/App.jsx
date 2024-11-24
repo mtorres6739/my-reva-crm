@@ -10,6 +10,8 @@ import ContactDetails from './pages/ContactDetails';
 import AddContact from './pages/AddContact';
 import Calendar from './pages/Calendar';
 import Tasks from './pages/Tasks';
+import Documents from './pages/Documents';
+import Profile from './pages/Profile';
 import DashboardLayout from './components/layout/DashboardLayout';
 
 function PrivateRoute({ children }) {
@@ -136,7 +138,7 @@ export default function App() {
           path="/documents"
           element={
             <PrivateRoute>
-              <div className="p-4">Documents Page</div>
+              <Documents />
             </PrivateRoute>
           }
         />
@@ -152,7 +154,7 @@ export default function App() {
           path="/profile"
           element={
             <PrivateRoute>
-              <div className="p-4">Profile Page</div>
+              <Profile />
             </PrivateRoute>
           }
         />

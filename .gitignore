@@ -8,6 +8,9 @@ yarn-error.log
 .env
 .env.local
 .env.*.local
+uploads/
+test*.txt
+test*.js
 
 # Build output
 dist/
