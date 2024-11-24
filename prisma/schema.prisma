@@ -1,0 +1,255 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  BROKER
+  AGENT
+}
+
+enum ContactStatus {
+  LEAD
+  SOI
+  CLIENT
+  ARCHIVED
+}
+
+enum PolicyType {
+  HOME
+  AUTO
+  LIFE
+  UMBRELLA
+  COMMERCIAL
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum DocumentType {
+  POLICY
+  CONTRACT
+  CLAIM
+  INVOICE
+  OTHER
+}
+
+enum PolicyStatus {
+  ACTIVE
+  PENDING
+  RENEWAL
+}
+
+enum ActivityType {
+  TASK_CREATED
+  TASK_COMPLETED
+  TASK_EDITED
+  TASK_DELETED
+}
+
+model User {
+  id            Int             @id @default(autoincrement())
+  email         String         @unique
+  passwordHash  String         @map("password_hash")
+  name          String
+  role          UserRole
+  supervisor    User?          @relation("UserHierarchy", fields: [supervisorId], references: [id])
+  supervisorId  Int?           @map("supervisor_id")
+  subordinates  User[]         @relation("UserHierarchy")
+  contacts      Contact[]
+  emailTemplates EmailTemplate[]
+  smsTemplates   SmsTemplate[]
+  tasks         Task[]         @relation("AssignedTasks")
+  createdTasks  Task[]         @relation("CreatedTasks")
+  events        Event[]        @relation("UserEvents")
+  documents     Document[]
+  reports       Report[]
+  createdEvents Event[]        @relation("CreatedEvents")
+  activities    Activity[]
+  createdAt     DateTime       @default(now()) @map("created_at")
+  updatedAt     DateTime       @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model Contact {
+  id          Int           @id @default(autoincrement())
+  name        String
+  email       String?
+  phone       String?
+  address     String?
+  birthdate   DateTime?     @db.Date
+  workplace   String?
+  notes       String?
+  status      ContactStatus @default(LEAD)
+  tags        Json?
+  assignedTo  User         @relation(fields: [assignedToId], references: [id])
+  assignedToId Int          @map("assigned_to")
+  policies    Policy[]
+  tasks       Task[]
+  events      Event[]
+  documents   Document[]
+  createdAt   DateTime     @default(now()) @map("created_at")
+  updatedAt   DateTime     @updatedAt @map("updated_at")
+
+  @@map("contacts")
+  @@index([assignedToId])
+  @@index([status])
+}
+
+model Policy {
+  id              Int         @id @default(autoincrement())
+  contact         Contact     @relation(fields: [contactId], references: [id])
+  contactId       Int         @map("contact_id")
+  policyNumber    String      @map("policy_number")
+  type           PolicyType
+  carrier        String
+  effectiveDate  DateTime    @map("effective_date") @db.Date
+  expiryDate     DateTime    @map("expiry_date") @db.Date
+  monthlyPremium Decimal     @map("monthly_premium") @db.Decimal(10,2)
+  annualPremium  Decimal     @map("annual_premium") @db.Decimal(10,2)
+  status         PolicyStatus @default(ACTIVE)
+  details        Json        @default("{}")
+  notes          String?
+  documents      Document[]
+  createdAt      DateTime    @default(now()) @map("created_at")
+  updatedAt      DateTime    @updatedAt @map("updated_at")
+
+  @@map("policies")
+  @@index([contactId])
+  @@index([type])
+  @@index([status])
+}
+
+model EmailTemplate {
+  id        Int       @id @default(autoincrement())
+  name      String
+  subject   String
+  body      String
+  createdBy User      @relation(fields: [createdById], references: [id])
+  createdById Int     @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@map("email_templates")
+}
+
+model SmsTemplate {
+  id        Int       @id @default(autoincrement())
+  name      String
+  body      String
+  createdBy User      @relation(fields: [createdById], references: [id])
+  createdById Int     @map("created_by")
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+
+  @@map("sms_templates")
+}
+
+model Task {
+  id          Int         @id @default(autoincrement())
+  title       String
+  description String?
+  dueDate     DateTime    @map("due_date")
+  priority    TaskPriority
+  status      TaskStatus  @default(TODO)
+  contact     Contact?    @relation(fields: [contactId], references: [id])
+  contactId   Int?        @map("contact_id")
+  assignedTo  User       @relation("AssignedTasks", fields: [assignedToId], references: [id])
+  assignedToId Int        @map("assigned_to")
+  createdBy   User       @relation("CreatedTasks", fields: [createdById], references: [id])
+  createdById Int        @map("created_by")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+
+  @@map("tasks")
+  @@index([assignedToId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model Event {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  start       DateTime
+  end         DateTime
+  type        String   // MEETING, TASK, REMINDER
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  createdBy   User     @relation("CreatedEvents", fields: [createdById], references: [id])
+  createdById Int
+  user        User     @relation("UserEvents", fields: [userId], references: [id])
+  userId      Int
+  contact     Contact? @relation(fields: [contactId], references: [id])
+  contactId   Int?
+
+  @@map("events")
+}
+
+model Document {
+  id          Int          @id @default(autoincrement())
+  name        String
+  type        DocumentType
+  fileUrl     String       @map("file_url")
+  contact     Contact      @relation(fields: [contactId], references: [id])
+  contactId   Int          @map("contact_id")
+  policy      Policy?      @relation(fields: [policyId], references: [id])
+  policyId    Int?         @map("policy_id")
+  uploadedBy  User        @relation(fields: [uploadedById], references: [id])
+  uploadedById Int         @map("uploaded_by")
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  @@map("documents")
+  @@index([contactId])
+  @@index([type])
+}
+
+model Report {
+  id          Int       @id @default(autoincrement())
+  title       String
+  description String?
+  data        Json
+  createdBy   User      @relation(fields: [createdById], references: [id])
+  createdById Int       @map("created_by")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("reports")
+  @@index([createdById])
+}
+
+model Activity {
+  id          Int         @id @default(autoincrement())
+  type        ActivityType
+  taskTitle   String      @map("task_title")
+  description String?
+  taskData    String?    @map("task_data")  // Store complete task data as JSON string
+  user        User        @relation(fields: [userId], references: [id])
+  userId      Int         @map("user_id")
+  timestamp   DateTime    @default(now())
+
+  @@map("activities")
+  @@index([userId])
+}

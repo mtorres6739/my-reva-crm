@@ -1,0 +1,55 @@
+{
+  "name": "crm-app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
+  "scripts": {
+    "dev": "concurrently \"vite\" \"node server.js\"",
+    "build": "vite build",
+    "lint": "eslint src --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
+    "seed": "prisma db seed"
+  },
+  "dependencies": {
+    "@faker-js/faker": "^9.2.0",
+    "@headlessui/react": "^1.7.17",
+    "@heroicons/react": "^2.0.18",
+    "@prisma/client": "^5.7.0",
+    "@tailwindcss/forms": "^0.5.9",
+    "axios": "^1.7.7",
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "date-fns": "^4.1.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.2",
+    "pg": "^8.11.3",
+    "react": "^18.2.0",
+    "react-big-calendar": "^1.16.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^6.20.1"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.10.4",
+    "@types/react": "^18.2.37",
+    "@types/react-dom": "^18.2.15",
+    "@vitejs/plugin-react": "^4.2.0",
+    "autoprefixer": "^10.4.16",
+    "concurrently": "^8.2.2",
+    "eslint": "^8.53.0",
+    "eslint-plugin-react": "^7.33.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.4",
+    "postcss": "^8.4.32",
+    "prisma": "^5.7.0",
+    "tailwindcss": "^3.3.6",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.0"
+  }
+}
