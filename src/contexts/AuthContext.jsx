@@ -102,11 +102,12 @@ export const AuthProvider = ({ children }) => {
 
   const value = {
     user,
+    setUser,
     token,
     loading,
     login,
-    register,
-    logout
+    logout,
+    register
   };
 
   return (
@@ -115,3 +116,5 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+
+export default AuthProvider;
