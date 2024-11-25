@@ -5,9 +5,10 @@ import parse from 'date-fns/parse';
 import startOfWeek from 'date-fns/startOfWeek';
 import getDay from 'date-fns/getDay';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import api from '../utils/axios';
+import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
 import { enUS } from 'date-fns/locale';
+import toast from 'react-hot-toast';
 
 const locales = {
   'en-US': enUS
@@ -33,36 +34,39 @@ const Calendar = () => {
     end: new Date(),
     contactId: null,
     description: '',
-    type: 'MEETING', // or 'TASK', 'REMINDER'
-    priority: 'MEDIUM' // or 'HIGH', 'LOW'
+    type: 'MEETING',
+    priority: 'MEDIUM'
   });
   const { user, token } = useAuth();
 
   useEffect(() => {
-    const loadEvents = async () => {
+    loadEvents();
+  }, [token]);
+
+  const loadEvents = async () => {
+    try {
+      setLoading(true);
+      setError(null);
       if (!token) {
         setLoading(false);
         return;
       }
-
-      try {
-        const response = await api.get('/api/events');
-        const transformedEvents = response.data.map(event => ({
-          ...event,
-          start: new Date(event.start),
-          end: new Date(event.end)
-        }));
-        setEvents(transformedEvents);
-      } catch (error) {
-        console.error('Error fetching events:', error);
-        setError(error.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadEvents();
-  }, [token]);
+      const response = await api.get('/events');
+      const transformedEvents = response.data.map(event => ({
+        ...event,
+        start: new Date(event.start),
+        end: new Date(event.end)
+      }));
+      setEvents(transformedEvents);
+    } catch (error) {
+      console.error('Error fetching events:', error);
+      const errorMessage = error.response?.data?.error || error.message;
+      setError(errorMessage);
+      toast.error(`Failed to load events: ${errorMessage}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleSelectSlot = ({ start, end }) => {
     setNewEvent(prev => ({
@@ -102,12 +106,12 @@ const Calendar = () => {
       };
 
       if (selectedEvent) {
-        await api.put(`/api/events/${selectedEvent.id}`, eventData);
+        await api.put(`/events/${selectedEvent.id}`, eventData);
       } else {
-        await api.post('/api/events', eventData);
+        await api.post('/events', eventData);
       }
 
-      const savedEvent = await api.get('/api/events');
+      const savedEvent = await api.get('/events');
       if (selectedEvent) {
         setEvents(events.map(event => 
           event.id === selectedEvent.id ? { ...savedEvent.data.find(event => event.id === selectedEvent.id), start: new Date(savedEvent.data.find(event => event.id === selectedEvent.id).start), end: new Date(savedEvent.data.find(event => event.id === selectedEvent.id).end) } : event
@@ -129,7 +133,8 @@ const Calendar = () => {
       });
     } catch (error) {
       console.error('Error saving event:', error);
-      alert('Failed to save event. Please try again.');
+      const errorMessage = error.response?.data?.error || error.message;
+      toast.error(`Failed to save event: ${errorMessage}`);
     }
   };
 
@@ -139,13 +144,14 @@ const Calendar = () => {
     }
 
     try {
-      await api.delete(`/api/events/${eventId}`);
+      await api.delete(`/events/${eventId}`);
       setEvents(events.filter(event => event.id !== eventId));
       setShowEventModal(false);
       setSelectedEvent(null);
     } catch (error) {
       console.error('Error deleting event:', error);
-      alert('Failed to delete event. Please try again.');
+      const errorMessage = error.response?.data?.error || error.message;
+      toast.error(`Failed to delete event: ${errorMessage}`);
     }
   };
 

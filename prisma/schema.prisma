@@ -118,27 +118,24 @@ model Contact {
 }
 
 model Policy {
-  id              Int         @id @default(autoincrement())
-  contact         Contact     @relation(fields: [contactId], references: [id])
-  contactId       Int         @map("contact_id")
-  policyNumber    String      @map("policy_number")
-  type           PolicyType
-  carrier        String
-  effectiveDate  DateTime    @map("effective_date") @db.Date
-  expiryDate     DateTime    @map("expiry_date") @db.Date
-  monthlyPremium Decimal     @map("monthly_premium") @db.Decimal(10,2)
-  annualPremium  Decimal     @map("annual_premium") @db.Decimal(10,2)
-  status         PolicyStatus @default(ACTIVE)
-  details        Json        @default("{}")
-  notes          String?
-  documents      Document[]
-  createdAt      DateTime    @default(now()) @map("created_at")
-  updatedAt      DateTime    @updatedAt @map("updated_at")
+  id              Int           @id @default(autoincrement())
+  policyNumber    String        @unique @map("policy_number")
+  type            PolicyType
+  carrier         String
+  effectiveDate   DateTime      @map("effective_date")
+  expiryDate      DateTime      @map("expiry_date")
+  monthlyPremium  Float         @map("monthly_premium")
+  annualPremium   Float         @map("annual_premium")
+  status          PolicyStatus  @default(ACTIVE)
+  details         Json?
+  notes           String?
+  contact         Contact       @relation(fields: [contactId], references: [id])
+  contactId       Int           @map("contact_id")
+  documents       Document[]
+  createdAt       DateTime      @default(now()) @map("created_at")
+  updatedAt       DateTime      @updatedAt @map("updated_at")
 
   @@map("policies")
-  @@index([contactId])
-  @@index([type])
-  @@index([status])
 }
 
 model EmailTemplate {
@@ -209,7 +206,7 @@ model Event {
 
 model Document {
   id          Int          @id @default(autoincrement())
-  name        String
+  title       String
   type        DocumentType
   fileUrl     String       @map("file_url")
   contact     Contact      @relation(fields: [contactId], references: [id])

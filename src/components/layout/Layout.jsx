@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { Dialog, Transition } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { Fragment } from 'react';
+import { Outlet } from 'react-router-dom';
 import Header from './Header';
 import Sidebar from './Sidebar';
 
-export default function Layout({ children }) {
+export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -59,18 +60,18 @@ export default function Layout({ children }) {
                   <div className="flex flex-shrink-0 items-center px-4">
                     <img
                       className="h-8 w-auto"
-                      src="/logo.svg"
-                      alt="Insurance CRM"
+                      src="https://tailwindui.com/img/logos/mark.svg?color=blue&shade=600"
+                      alt="Your Company"
                     />
                   </div>
                   <div className="mt-5 h-0 flex-1 overflow-y-auto">
-                    <nav className="space-y-1 px-2">
-                      <Sidebar />
-                    </nav>
+                    <Sidebar />
                   </div>
                 </Dialog.Panel>
               </Transition.Child>
-              <div className="w-14 flex-shrink-0" aria-hidden="true"></div>
+              <div className="w-14 flex-shrink-0" aria-hidden="true">
+                {/* Dummy element to force sidebar to shrink to fit close icon */}
+              </div>
             </div>
           </Dialog>
         </Transition.Root>
@@ -83,8 +84,8 @@ export default function Layout({ children }) {
 
           <main className="flex-1">
             <div className="py-6">
-              <div className="mx-auto max-w-7xl px-4 sm:px-6 md:px-8">
-                {children}
+              <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                <Outlet />
               </div>
             </div>
           </main>

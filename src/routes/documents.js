@@ -61,31 +61,39 @@ router.post('/', authenticateToken, upload.single('file'), async (req, res) => {
     console.log('Request file:', req.file);
     console.log('Request body:', req.body);
 
-    const { taskId } = req.body;
     const file = req.file;
+    const { contactId, policyId } = req.body;
 
     if (!file) {
       console.error('No file in request');
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
-    console.log('Creating document in database with data:', {
-      fileName: file.originalname,
-      fileType: file.mimetype,
-      fileSize: file.size,
-      filePath: file.key,
-      userId: req.user.id,
-      taskId: taskId ? parseInt(taskId) : null
-    });
+    if (!contactId) {
+      console.error('No contactId provided');
+      return res.status(400).json({ error: 'Contact ID is required' });
+    }
+
+    const documentData = {
+      title: file.originalname,
+      type: 'OTHER',
+      fileUrl: file.location, // Use file.location instead of file.key for S3 uploads
+      contact: { connect: { id: parseInt(contactId) } },
+      uploadedBy: { connect: { id: req.user.id } }
+    };
+
+    if (policyId && policyId !== '') {
+      documentData.policy = { connect: { id: parseInt(policyId) } };
+    }
+
+    console.log('Creating document with data:', documentData);
 
     const document = await prisma.document.create({
-      data: {
-        fileName: file.originalname,
-        fileType: file.mimetype,
-        fileSize: file.size,
-        filePath: file.key,
-        userId: req.user.id,
-        taskId: taskId ? parseInt(taskId) : null
+      data: documentData,
+      include: {
+        contact: true,
+        policy: true,
+        uploadedBy: true
       }
     });
 
@@ -107,10 +115,10 @@ router.get('/', authenticateToken, async (req, res) => {
   try {
     const documents = await prisma.document.findMany({
       where: {
-        userId: req.user.id
+        uploadedById: req.user.id
       },
       include: {
-        user: {
+        uploadedBy: {
           select: {
             id: true,
             name: true,
@@ -122,12 +130,6 @@ router.get('/', authenticateToken, async (req, res) => {
             id: true,
             name: true,
             email: true
-          }
-        },
-        task: {
-          select: {
-            id: true,
-            title: true
           }
         },
         policy: {
@@ -158,7 +160,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
     const document = await prisma.document.findUnique({
       where: { id: parseInt(id) },
       include: {
-        user: {
+        uploadedBy: {
           select: {
             id: true,
             name: true,
@@ -170,12 +172,6 @@ router.get('/:id', authenticateToken, async (req, res) => {
             id: true,
             name: true,
             email: true
-          }
-        },
-        task: {
-          select: {
-            id: true,
-            title: true
           }
         },
         policy: {
@@ -195,7 +191,7 @@ router.get('/:id', authenticateToken, async (req, res) => {
     // Generate a pre-signed URL for downloading
     const command = new GetObjectCommand({
       Bucket: process.env.AWS_BUCKET_NAME,
-      Key: document.filePath
+      Key: document.fileUrl
     });
     
     const downloadUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 }); // URL expires in 1 hour
@@ -220,14 +216,14 @@ router.delete('/:id', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'Document not found' });
     }
 
-    if (document.userId !== req.user.id) {
+    if (document.uploadedById !== req.user.id) {
       return res.status(403).json({ error: 'Not authorized to delete this document' });
     }
 
     // Delete from S3
     await s3Client.send(new DeleteObjectCommand({
       Bucket: process.env.AWS_BUCKET_NAME,
-      Key: document.filePath
+      Key: document.fileUrl
     }));
 
     // Delete from database

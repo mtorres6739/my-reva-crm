@@ -8,6 +8,7 @@ async function main() {
   
   // Clear existing data
   console.log('Clearing existing data...');
+  await prisma.activity.deleteMany();
   await prisma.document.deleteMany();
   await prisma.report.deleteMany();
   await prisma.task.deleteMany();
@@ -247,40 +248,61 @@ async function main() {
 
   // Create Documents
   console.log('Creating documents...');
-  await prisma.document.create({
+  const doc1 = await prisma.document.create({
     data: {
-      name: 'Home Insurance Policy Document',
+      title: 'Home Policy Document',
       type: 'POLICY',
-      fileUrl: '/documents/policies/HOME-001.pdf',
-      contactId: contact1.id,
-      policyId: homePolicy.id,
-      uploadedById: agent1.id,
-    },
+      fileUrl: 'https://example.com/docs/home-policy.pdf',
+      contact: { connect: { id: contact1.id } },
+      policy: { connect: { id: homePolicy.id } },
+      uploadedBy: { connect: { id: agent1.id } }
+    }
   });
-  console.log('Document created: Home Insurance Policy Document');
+  console.log('Document created:', doc1.title);
 
-  await prisma.document.create({
+  const doc2 = await prisma.document.create({
     data: {
-      name: 'Auto Insurance Policy Document',
+      title: 'Auto Policy Document',
       type: 'POLICY',
-      fileUrl: '/documents/policies/AUTO-001.pdf',
-      contactId: contact1.id,
-      policyId: autoPolicy.id,
-      uploadedById: agent1.id,
-    },
+      fileUrl: 'https://example.com/docs/auto-policy.pdf',
+      contact: { connect: { id: contact2.id } },
+      policy: { connect: { id: autoPolicy.id } },
+      uploadedBy: { connect: { id: agent2.id } }
+    }
   });
-  console.log('Document created: Auto Insurance Policy Document');
+  console.log('Document created:', doc2.title);
 
-  await prisma.document.create({
+  // Create Activities
+  console.log('Creating activities...');
+  const activity1 = await prisma.activity.create({
     data: {
-      name: 'Business Requirements',
-      type: 'OTHER',
-      fileUrl: '/documents/other/business-req.pdf',
-      contactId: contact3.id,
-      uploadedById: agent2.id,
-    },
+      type: 'TASK_CREATED',
+      taskTitle: 'Follow up on quote request',
+      description: 'New task created for quote follow-up',
+      taskData: JSON.stringify({
+        priority: 'HIGH',
+        status: 'TODO',
+        dueDate: new Date('2024-01-05')
+      }),
+      user: { connect: { id: agent1.id } }
+    }
   });
-  console.log('Document created: Business Requirements');
+  console.log('Activity created:', activity1.taskTitle);
+
+  const activity2 = await prisma.activity.create({
+    data: {
+      type: 'TASK_COMPLETED',
+      taskTitle: 'Policy renewal review',
+      description: 'Task completed: Policy renewal reviewed and approved',
+      taskData: JSON.stringify({
+        priority: 'MEDIUM',
+        status: 'COMPLETED',
+        dueDate: new Date('2024-01-10')
+      }),
+      user: { connect: { id: agent2.id } }
+    }
+  });
+  console.log('Activity created:', activity2.taskTitle);
 
   // Create Reports
   console.log('Creating reports...');

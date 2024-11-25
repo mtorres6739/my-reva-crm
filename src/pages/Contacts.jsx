@@ -15,7 +15,7 @@ function Contacts() {
         const token = localStorage.getItem('token');
         console.log('Using token:', token ? 'exists' : 'missing');
         
-        const response = await fetch('/api/contacts', {
+        const response = await fetch('http://localhost:3001/api/contacts', {
           headers: {
             'Authorization': `Bearer ${token}`
           }

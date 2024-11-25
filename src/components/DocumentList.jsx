@@ -54,7 +54,7 @@ const DocumentList = ({ taskId = null, onDocumentDelete }) => {
       // Create a temporary link and click it to start the download
       const link = document.createElement('a');
       link.href = downloadUrl;
-      link.download = document.fileName;
+      link.download = document.title;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -98,58 +98,45 @@ const DocumentList = ({ taskId = null, onDocumentDelete }) => {
         >
           <div className="flex items-center space-x-4">
             <div className="text-gray-500">
-              {getFileIcon(document.fileType)}
+              {getFileIcon(document.type)}
             </div>
             <div>
-              <h4 className="text-sm font-medium text-gray-900">
-                {document.fileName}
-              </h4>
-              <div className="flex space-x-4 text-xs text-gray-500">
-                <span>{formatFileSize(document.fileSize)}</span>
-                <span>•</span>
-                <span>{format(new Date(document.createdAt), 'MMM d, yyyy')}</span>
-              </div>
-              <div className="mt-1 flex flex-wrap gap-2 text-xs">
-                {document.user && (
-                  <div className="flex items-center text-blue-600">
-                    <FiUser className="w-3 h-3 mr-1" />
-                    <span>{document.user.name}</span>
+              <h3 className="font-medium text-gray-900">{document.title}</h3>
+              <div className="text-sm text-gray-500">
+                <div className="flex items-center space-x-2">
+                  <FiUser className="w-4 h-4" />
+                  <span>Uploaded by {document.uploadedBy?.name}</span>
+                </div>
+                {document.contact && (
+                  <div className="flex items-center space-x-2">
+                    <FiUsers className="w-4 h-4" />
+                    <span>Contact: {document.contact.name}</span>
                   </div>
                 )}
-                {document.contact && (
-                  <Link to={`/contacts/${document.contact.id}`} className="flex items-center text-green-600 hover:text-green-700">
-                    <FiUsers className="w-3 h-3 mr-1" />
-                    <span>{document.contact.name}</span>
-                  </Link>
-                )}
-                {document.task && (
-                  <Link to={`/tasks/${document.task.id}`} className="flex items-center text-purple-600 hover:text-purple-700">
-                    <FiClipboard className="w-3 h-3 mr-1" />
-                    <span>{document.task.title}</span>
-                  </Link>
-                )}
                 {document.policy && (
-                  <Link to={`/policies/${document.policy.id}`} className="flex items-center text-orange-600 hover:text-orange-700">
-                    <FiFileText className="w-3 h-3 mr-1" />
-                    <span>{document.policy.policyNumber}</span>
-                  </Link>
+                  <div className="flex items-center space-x-2">
+                    <FiFileText className="w-4 h-4" />
+                    <span>Policy: {document.policy.policyNumber}</span>
+                  </div>
                 )}
+                <div className="text-xs text-gray-400">
+                  Uploaded {format(new Date(document.createdAt), 'MMM d, yyyy')}
+                </div>
               </div>
             </div>
           </div>
-          
-          <div className="flex items-center space-x-2">
+          <div className="flex space-x-2">
             <button
               onClick={() => handleDownload(document)}
-              className="p-2 text-gray-500 hover:text-blue-600 rounded-full hover:bg-blue-50 transition-colors"
-              title="Download document"
+              className="p-2 text-blue-600 hover:text-blue-800 transition-colors"
+              title="Download"
             >
               <FiDownload className="w-5 h-5" />
             </button>
             <button
               onClick={() => handleDelete(document.id)}
-              className="p-2 text-gray-500 hover:text-red-600 rounded-full hover:bg-red-50 transition-colors"
-              title="Delete document"
+              className="p-2 text-red-600 hover:text-red-800 transition-colors"
+              title="Delete"
             >
               <FiTrash2 className="w-5 h-5" />
             </button>

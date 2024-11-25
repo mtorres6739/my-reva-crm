@@ -8,7 +8,7 @@ import {
 } from "react-icons/ri";
 
 const navigation = [
-  { name: "Dashboard", href: "/dashboard", icon: RiDashboardLine },
+  { name: "Dashboard", href: "/", icon: RiDashboardLine },
   { name: "Contacts", href: "/contacts", icon: RiContactsLine },
   { name: "Policies", href: "/policies", icon: RiFileListLine },
   { name: "Calendar", href: "/calendar", icon: RiCalendarLine },

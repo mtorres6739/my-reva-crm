@@ -1,9 +1,10 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
-import { AuthProvider } from './contexts/AuthContext';
-import App from './App';
+import { Toaster } from 'react-hot-toast';
 import './index.css';
+import { RouterProvider } from 'react-router-dom';
+import { router } from './routes';
+import { AuthProvider } from './contexts/AuthContext';
 
 // Ensure the DOM is fully loaded before mounting
 const root = document.getElementById('root');
@@ -13,10 +14,9 @@ if (!root) {
 
 ReactDOM.createRoot(root).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <AuthProvider>
-        <App />
-      </AuthProvider>
-    </BrowserRouter>
+    <AuthProvider>
+      <RouterProvider router={router} />
+      <Toaster position="top-right" />
+    </AuthProvider>
   </React.StrictMode>
 );

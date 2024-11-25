@@ -3,7 +3,7 @@ import { useDropzone } from 'react-dropzone';
 import axios from '../lib/axios';
 import { FiUpload, FiFile, FiTrash2 } from 'react-icons/fi';
 
-const DocumentUpload = ({ taskId = null, onUploadSuccess }) => {
+const DocumentUpload = ({ taskId = null, contactId, policyId, onUploadSuccess }) => {
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -13,6 +13,10 @@ const DocumentUpload = ({ taskId = null, onUploadSuccess }) => {
 
     const formData = new FormData();
     formData.append('file', acceptedFiles[0]);
+    formData.append('contactId', contactId);
+    if (policyId) {
+      formData.append('policyId', policyId);
+    }
     if (taskId) {
       formData.append('taskId', taskId);
     }
@@ -33,7 +37,7 @@ const DocumentUpload = ({ taskId = null, onUploadSuccess }) => {
     } finally {
       setUploading(false);
     }
-  }, [taskId, onUploadSuccess]);
+  }, [taskId, contactId, policyId, onUploadSuccess]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,

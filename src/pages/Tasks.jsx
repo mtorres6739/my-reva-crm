@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import api from '../utils/axios';
+import api from '../api/axios';
 import { useAuth } from '../contexts/AuthContext';
 import ActivityHistory from '../components/ActivityHistory';
+import toast from 'react-hot-toast';
 
 const Tasks = () => {
   const [tasks, setTasks] = useState([]);
   const [activities, setActivities] = useState([]);
   const [showTaskModal, setShowTaskModal] = useState(false);
   const [loading, setLoading] = useState(true);
-  const { token } = useAuth();
+  const { user } = useAuth();
   const [newTask, setNewTask] = useState({
     title: '',
     description: '',
@@ -20,55 +21,57 @@ const Tasks = () => {
   const [editingTask, setEditingTask] = useState(null);
 
   useEffect(() => {
-    const loadTasks = async () => {
-      if (!token) {
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const response = await api.get('/api/events');
-        console.log('Fetched events:', response.data);
-        
-        const transformedTasks = response.data
-          .filter(event => event.type === 'TASK')
-          .map(task => ({
-            _id: task.id,
-            title: task.title || '',
-            description: task.description || '',
-            type: 'TASK',
-            start: new Date(task.start),
-            end: new Date(task.end),
-            dueDate: format(new Date(task.start), "yyyy-MM-dd'T'HH:mm"),
-            priority: task.priority || 'MEDIUM',
-            status: task.status || 'PENDING'
-          }));
-        
-        console.log('Final transformed tasks:', transformedTasks);
-        setTasks(transformedTasks);
-      } catch (error) {
-        console.error('Error fetching tasks:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     loadTasks();
-  }, [token]);
+  }, []);
+
+  const loadTasks = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/events', {
+        params: {
+          type: 'TASK'
+        }
+      });
+      
+      const transformedTasks = response.data
+        .filter(event => event.type === 'TASK')
+        .map(task => ({
+          id: task.id,
+          title: task.title || '',
+          description: task.description || '',
+          type: 'TASK',
+          start: new Date(task.start),
+          end: new Date(task.end),
+          dueDate: format(new Date(task.start), "yyyy-MM-dd'T'HH:mm"),
+          priority: task.priority || 'MEDIUM',
+          status: task.status || 'PENDING'
+        }));
+      
+      setTasks(transformedTasks);
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+      const errorMessage = error.response?.data?.error || error.message;
+      toast.error(`Failed to load tasks: ${errorMessage}`);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const loadActivities = async () => {
       try {
-        const response = await api.get('/api/activities');
+        const response = await api.get('/activities');
         console.log('Loaded activities:', response.data);
         setActivities(response.data);
       } catch (error) {
         console.error('Error loading activities:', error);
+        const errorMessage = error.response?.data?.error || error.message;
+        toast.error(`Failed to load activities: ${errorMessage}`);
       }
     };
 
     loadActivities();
-  }, [token]);
+  }, []);
 
   const recordActivity = async (type, task) => {
     try {
@@ -76,7 +79,7 @@ const Tasks = () => {
       
       // Create a clean task data object
       const taskData = {
-        id: task._id,
+        id: task.id,
         title: task.title,
         description: task.description || '',
         dueDate: task.dueDate,
@@ -95,7 +98,7 @@ const Tasks = () => {
       };
       
       console.log('Sending activity:', activity);
-      const response = await api.post('/api/activities', activity);
+      const response = await api.post('/activities', activity);
       console.log('Activity response:', response.data);
       
       // Update activities state with the taskData directly
@@ -108,12 +111,14 @@ const Tasks = () => {
       setActivities(current => [newActivity, ...current]);
     } catch (error) {
       console.error('Error recording activity:', error);
+      const errorMessage = error.response?.data?.error || error.message;
+      toast.error(`Failed to record activity: ${errorMessage}`);
     }
   };
 
   const handleComplete = async (taskId) => {
     try {
-      const task = tasks.find(t => t._id === taskId);
+      const task = tasks.find(t => t.id === taskId);
       if (!task) return;
 
       const updatedTask = {
@@ -121,12 +126,12 @@ const Tasks = () => {
         status: 'COMPLETED'
       };
 
-      await api.put(`/api/events/${taskId}`, updatedTask);
+      await api.put(`/events/${taskId}`, updatedTask);
       
       // Update local state
       setTasks(currentTasks =>
         currentTasks.map(t =>
-          t._id === taskId ? { ...t, status: 'COMPLETED' } : t
+          t.id === taskId ? { ...t, status: 'COMPLETED' } : t
         )
       );
 
@@ -134,23 +139,26 @@ const Tasks = () => {
       await recordActivity('TASK_COMPLETED', { ...task, status: 'COMPLETED' });
     } catch (error) {
       console.error('Error completing task:', error);
+      const errorMessage = error.response?.data?.error || error.message;
+      toast.error(`Failed to complete task: ${errorMessage}`);
     }
   };
 
   const handleDelete = async (taskId) => {
     if (window.confirm('Are you sure you want to delete this task?')) {
       try {
-        const task = tasks.find(t => t._id === taskId);
+        const task = tasks.find(t => t.id === taskId);
         if (!task) return;
 
-        await api.delete(`/api/events/${taskId}`);
+        await api.delete(`/events/${taskId}`);
         await recordActivity('TASK_DELETED', task);
         
         // Update local state
-        setTasks(currentTasks => currentTasks.filter(t => t._id !== taskId));
+        setTasks(currentTasks => currentTasks.filter(t => t.id !== taskId));
       } catch (error) {
         console.error('Error deleting task:', error);
-        alert(`Failed to delete task: ${error.response?.data?.message || error.message}`);
+        const errorMessage = error.response?.data?.error || error.message;
+        toast.error(`Failed to delete task: ${errorMessage}`);
       }
     }
   };
@@ -167,12 +175,12 @@ const Tasks = () => {
 
       if (editingTask) {
         // Update existing task
-        await api.put(`/api/events/${editingTask._id}`, taskData);
+        await api.put(`/events/${editingTask.id}`, taskData);
         
         const updatedTask = {
           ...editingTask,
           ...taskData,
-          _id: editingTask._id,
+          id: editingTask.id,
           start: new Date(taskData.start),
           end: new Date(taskData.end),
           dueDate: newTask.dueDate,
@@ -180,7 +188,7 @@ const Tasks = () => {
 
         setTasks(currentTasks =>
           currentTasks.map(task =>
-            task._id === editingTask._id ? updatedTask : task
+            task.id === editingTask.id ? updatedTask : task
           )
         );
 
@@ -188,9 +196,9 @@ const Tasks = () => {
         await recordActivity('TASK_EDITED', updatedTask);
       } else {
         // Create new task
-        const response = await api.post('/api/events', taskData);
+        const response = await api.post('/events', taskData);
         const createdTask = {
-          _id: response.data.id,
+          id: response.data.id,
           ...taskData,
           start: new Date(taskData.start),
           end: new Date(taskData.end),
@@ -214,7 +222,8 @@ const Tasks = () => {
       setShowTaskModal(false);
     } catch (error) {
       console.error('Error saving task:', error);
-      alert('Failed to save task. Please try again.');
+      const errorMessage = error.response?.data?.error || error.message;
+      toast.error(`Failed to save task: ${errorMessage}`);
     }
   };
 
@@ -236,11 +245,11 @@ const Tasks = () => {
       console.log('Tasks.jsx - Created newTaskData:', newTaskData);
 
       // Create the task
-      const response = await api.post('/api/events', newTaskData);
+      const response = await api.post('/events', newTaskData);
       console.log('Tasks.jsx - API response:', response.data);
 
       const createdTask = {
-        _id: response.data.id,
+        id: response.data.id,
         ...newTaskData,
         start: new Date(newTaskData.start),
         end: new Date(newTaskData.end),
@@ -255,10 +264,11 @@ const Tasks = () => {
       // Record activity
       await recordActivity('TASK_CREATED', createdTask);
       
-      alert('Task restored successfully!');
+      toast.success('Task restored successfully!');
     } catch (error) {
       console.error('Error restoring task:', error);
-      alert('Failed to restore task: ' + (error.response?.data?.message || error.message));
+      const errorMessage = error.response?.data?.error || error.message;
+      toast.error(`Failed to restore task: ${errorMessage}`);
     }
   };
 
@@ -296,7 +306,7 @@ const Tasks = () => {
     );
   }
 
-  if (!token) {
+  if (!user) {
     return (
       <div className="flex items-center justify-center h-screen">
         <p className="text-gray-600">Please log in to view tasks.</p>
@@ -345,12 +355,12 @@ const Tasks = () => {
             </thead>
             <tbody className="divide-y divide-gray-200">
               {tasks.map((task) => {
-                if (!task._id) {
-                  console.warn('Task missing _id in render:', task);
+                if (!task.id) {
+                  console.warn('Task missing id in render:', task);
                   return null;
                 }
                 return (
-                  <tr key={task._id} className="hover:bg-gray-50">
+                  <tr key={task.id} className="hover:bg-gray-50">
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{task.title || ''}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{task.description || ''}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -385,14 +395,14 @@ const Tasks = () => {
                       </button>
                       {task.status !== 'COMPLETED' && (
                         <button
-                          onClick={() => handleComplete(task._id)}
+                          onClick={() => handleComplete(task.id)}
                           className="text-green-600 hover:text-green-900 mr-4"
                         >
                           Complete
                         </button>
                       )}
                       <button
-                        onClick={() => handleDelete(task._id)}
+                        onClick={() => handleDelete(task.id)}
                         className="text-red-600 hover:text-red-900"
                       >
                         Delete
